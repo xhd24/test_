@@ -1,0 +1,59 @@
+import requests
+from bs4 import BeautifulSoup
+req=requests.get('https://store.musinsa.com/app/contents/bestranking/?d_cat_cd=&u_cat_cd=&range=nw&price=&ex_soldout=&sale_goods=&new_product_yn=&list_kind=&page=1&display_cnt=80&sex=&popup=&sale_rate=&price1=&price2=')
+html=req.text
+soup=BeautifulSoup(html,'html.parser')
+
+brand_contents=soup.select('div.article_info>p.item_title>a')
+title_contents=soup.select('div.article_info>p.list_info')
+price_contents=soup.select('div.article_info>p.price')
+point_contents=soup.select('div.article_info>p.point')
+likeit_contents=soup.select('div.article_info>p.txt_cnt_like')
+worm=soup.select('div.icon_group')
+
+title_contents=[line.get_text().strip() for line in title_contents]
+brand_contents=[line.get_text().strip() for line in brand_contents]
+price_contents=[line.get_text().strip() for line in price_contents]
+price_contents=[line.split("\t")[0] for line in price_contents]
+price_contents=[line.replace("¿ø","") for line in price_contents]
+price_contents=[line.replace(",","") for line in price_contents]
+point_contents=[line.get_text().strip() for line in point_contents]
+point_contents=[line.replace(",","") for line in point_contents]
+likeit_contents=[line.get_text().strip() for line in likeit_contents]
+likeit_contents=[line.replace(",","") for line in likeit_contents]
+worm=[line.get_text().strip() for line in worm]
+
+import pandas as pd
+
+df=pd.DataFrame({'title':title_contents,'brand':brand_contents,'point':point_contents,'likeit':likeit_contents,'price':price_contents,'W/M':worm})
+
+df['price']=pd.to_numeric(df['price'])
+df['point']=pd.to_numeric(df['point'])
+df['likeit']=pd.to_numeric(df['likeit'])
+
+df_01=df.groupby('W/M')['price','likeit','point'].mean()
+df_02=df.groupby('brand')['likeit','point'].mean()
+df_03=df.groupby('title')['likeit','point'].mean()
+df_04=df.sort_values(by='likeit',ascending=False)
+
+import matplotlib.pyplot as plt
+scatter_plot=plt.figure()
+fig=plt.figure()
+axes1=fig.add_subplot(2,2,1)
+axes2=fig.add_subplot(2,2,2)
+axes1.scatter(x=df.index,y=df['likeit'])
+axes1.set_title("How many likeit by rank")
+axes1.set_xlabel("rank")
+axes1.set_ylabel("likeit")
+
+axes2.scatter(x=df_03['likeit'],y=df.index)
+axes2.set_title("rank of many likeit")
+axes2.set_xlabel("likeit")
+axes2.set_ylabel("rank")
+
+fig=plt.figure()
+axes1=fig.add_subplot(1,1,1)
+axes1.hist(df['price'],bins=20)
+axes1.set_title("Histogram of price")
+axes1.set_xlabel('price')
+axes1.set_ylabel('number of product')
