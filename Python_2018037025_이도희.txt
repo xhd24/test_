@@ -10,6 +10,7 @@ price_contents=soup.select('div.article_info>p.price')
 point_contents=soup.select('div.article_info>p.point')
 likeit_contents=soup.select('div.article_info>p.txt_cnt_like')
 worm=soup.select('div.icon_group')
+#무신사 스토에서 각 항목 가져옴
 
 title_contents=[line.get_text().strip() for line in title_contents]
 brand_contents=[line.get_text().strip() for line in brand_contents]
@@ -22,38 +23,55 @@ point_contents=[line.replace(",","") for line in point_contents]
 likeit_contents=[line.get_text().strip() for line in likeit_contents]
 likeit_contents=[line.replace(",","") for line in likeit_contents]
 worm=[line.get_text().strip() for line in worm]
+#원하는 텍스트형태로 리스트 만들기
 
 import pandas as pd
 
 df=pd.DataFrame({'title':title_contents,'brand':brand_contents,'point':point_contents,'likeit':likeit_contents,'price':price_contents,'W/M':worm})
+#가져온 데이터를 데이터프레임으로 만듬
 
 df['price']=pd.to_numeric(df['price'])
 df['point']=pd.to_numeric(df['point'])
 df['likeit']=pd.to_numeric(df['likeit'])
+#price, point, likeit 항목 타입 변환
 
 df_01=df.groupby('W/M')['price','likeit','point'].mean()
+#W/M항목으로 그룹화하여 price,likeit,point 평균 비교
 df_02=df.groupby('brand')['likeit','point'].mean()
+#brand항목으로 그룹화하여 likeit,point 평균 비교
 df_03=df.groupby('title')['likeit','point'].mean()
-df_04=df.sort_values(by='likeit',ascending=False)
+#title항목으로 그룹화하여 likeit,point 평균 비교
+
+df_05=df_02.sort_values(by='likeit',ascending=False)
+#브랜드로 그룹화한 데이터를 좋아요를 기준으로 내림차순 정렬
+df_06=df_03.sort_values(by='likeit',ascending=False)
+#title로 그룹화한 데이터를 좋아요를 기준으로 내림차순 정렬
 
 import matplotlib.pyplot as plt
 scatter_plot=plt.figure()
 fig=plt.figure()
 axes1=fig.add_subplot(2,2,1)
 axes2=fig.add_subplot(2,2,2)
+
 axes1.scatter(x=df.index,y=df['likeit'])
 axes1.set_title("How many likeit by rank")
 axes1.set_xlabel("rank")
 axes1.set_ylabel("likeit")
+#axes1은 순위에 따른 좋아요 분포도
 
-axes2.scatter(x=df_03['likeit'],y=df.index)
-axes2.set_title("rank of many likeit")
-axes2.set_xlabel("likeit")
-axes2.set_ylabel("rank")
+axes2.scatter(x=df.index,y=df['point'])
+axes2.set_title("How many point by rank")
+axes2.set_xlabel("rank")
+axes2.set_ylabel("point")
+#axes2는 순위에 따른 별점 분포도
 
 fig=plt.figure()
 axes1=fig.add_subplot(1,1,1)
-axes1.hist(df['price'],bins=20)
+axes1.hist(df['price'],bins=40)
 axes1.set_title("Histogram of price")
 axes1.set_xlabel('price')
 axes1.set_ylabel('number of product')
+#가격에 따른 빈도수 그래프
+
+
+
